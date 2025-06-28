@@ -1,5 +1,5 @@
 import React from 'react';
-import { LoaderDTO } from '../types/LoaderDTO';
+import type { LoaderDTO } from '../types/LoaderDTO';
 import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton
 } from '@mui/material';

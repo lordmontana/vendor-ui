@@ -1,19 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { LoaderDTO } from '../types/LoaderDTO';
+import type { LoaderDTO } from '../types/LoaderDTO';
 import {
-    getAllSuppliers, addSupplier, updateSupplier, deleteSupplier
+    getAllSuppliers,
+    addSupplier,
+    updateSupplier,
+    deleteSupplier
 } from '../api/vendorApi';
 import { VendorTable } from '../components/VendorTable';
 import { VendorForm } from '../components/VendorForm';
-import { Container, Typography } from '@mui/material';
+import {
+    Container,
+    Typography,
+    Alert,
+    Paper
+} from '@mui/material';
 
 export const VendorPage: React.FC = () => {
     const [suppliers, setSuppliers] = useState<LoaderDTO[]>([]);
     const [editItem, setEditItem] = useState<LoaderDTO | undefined>();
+    const [error, setError] = useState<string | null>(null);
 
     const loadSuppliers = async () => {
-        const response = await getAllSuppliers();
-        setSuppliers(response.data);
+        try {
+            setError(null);
+            const response = await getAllSuppliers();
+            setSuppliers(response.data);
+        } catch (err) {
+            console.error(err);
+            setError('Failed to load suppliers.');
+        }
     };
 
     useEffect(() => {
@@ -21,26 +36,50 @@ export const VendorPage: React.FC = () => {
     }, []);
 
     const handleSave = async (data: LoaderDTO) => {
-        const exists = suppliers.find(s => s.id === data.id);
-        if (exists) {
-            await updateSupplier(data.id, data);
-        } else {
-            await addSupplier(data);
+        try {
+            const exists = suppliers.some(s => s.id === data.id);
+            if (exists) {
+                await updateSupplier(data);
+            } else {
+                await addSupplier(data);
+            }
+            await loadSuppliers();
+            setEditItem(undefined);
+        } catch (err) {
+            console.error(err);
+            setError('Failed to save supplier.');
         }
-        await loadSuppliers();
-        setEditItem(undefined);
     };
 
     const handleDelete = async (id: string) => {
-        await deleteSupplier(id);
-        await loadSuppliers();
+        try {
+            await deleteSupplier(id);
+            await loadSuppliers();
+        } catch (err) {
+            console.error(err);
+            setError('Failed to delete supplier.');
+        }
     };
 
     return (
-        <Container>
-            <Typography variant="h4" gutterBottom>Supplier Management</Typography>
-            <VendorForm onSave={handleSave} initialData={editItem} />
-            <VendorTable suppliers={suppliers} onEdit={setEditItem} onDelete={handleDelete} />
+        <Container maxWidth="md" sx={{ py: 5 }}>
+            <Typography variant="h4" gutterBottom>
+                Suppliers
+            </Typography>
+
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+            <Paper elevation={3} sx={{ p: 2, mb: 4 }}>
+                <VendorForm onSave={handleSave} initialData={editItem} />
+            </Paper>
+
+            <Paper elevation={3}>
+                <VendorTable
+                    suppliers={suppliers}
+                    onEdit={setEditItem}
+                    onDelete={handleDelete}
+                />
+            </Paper>
         </Container>
     );
 };
